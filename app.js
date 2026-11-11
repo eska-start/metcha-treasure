@@ -5,7 +5,8 @@
 'use strict';
 
 const RELAY = 'https://ntfy.sh';
-const OPEN_M = 10;
+const OPEN_M = 6; // open only right next to it (plus a little GPS slack)
+const SLACK = (acc) => Math.min(4, acc || 0);
 const RANK = { 0: '꽝', 1: '1등', 2: '2등', 3: '3등' };
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
 const TEAMS = [
@@ -404,7 +405,7 @@ function hunt(g, pid) {
   let here = null, heading = null, pitch = 0, dragHeading = 0, soundOn = true, lastWhistle = 0, boxes = [], stream = null, busy = false;
   // chests stay invisible until you press 찾기 close enough; then they show for a while
   const revealed = new Map(); // treasure id -> until (ms)
-  const REVEAL_M = 15, REVEAL_FOR = 45000;
+  const REVEAL_M = 7, REVEAL_FOR = 45000;
   let scanUntil = 0, scanCool = 0, signal = 0;
   let fedTo = g.feed.length, endShown = false;
 
@@ -445,7 +446,7 @@ function hunt(g, pid) {
     scanCool = now + 2500; scanUntil = now + 1200;
     Sound.tone(900, 0, 0.12, 0.25); Sound.tone(1200, 0.15, 0.12, 0.25); Sound.tone(1600, 0.3, 0.2, 0.25);
     if (!here) { toast('아직 내 위치를 몰라요'); return; }
-    const reach = REVEAL_M + Math.min(10, here.acc || 0);
+    const reach = REVEAL_M + SLACK(here.acc);
     const found = g.treasures.filter((t) => !g.opened.has(t.id) && distM(here, t) <= reach);
     setTimeout(() => {
       if (found.length) {
@@ -454,7 +455,7 @@ function hunt(g, pid) {
         Sound.tone(1320, 0, 0.25, 0.3, 'triangle'); Sound.tone(1760, 0.12, 0.35, 0.3, 'triangle');
         navigator.vibrate?.([40, 40, 80]);
       } else {
-        toast(signal >= 3 ? '거의 다 왔어! 조금 더 움직여서 다시 찾아봐' : '여긴 없어요… 신호가 강한 쪽으로 가 봐요', 2600);
+        toast(signal >= 4 ? '거의 다 왔어! 조금 더 움직여서 다시 찾아봐' : '여긴 없어요… 신호가 강한 쪽으로 가 봐요', 2600);
         Sound.boop(330);
       }
     }, 1200);
@@ -467,7 +468,7 @@ function hunt(g, pid) {
     const hit = boxes.filter((b) => x >= b.x - 14 && x <= b.x + b.w + 14 && y >= b.y - 14 && y <= b.y + b.h + 14).sort((a, b) => a.d - b.d)[0];
     if (!hit || busy || g.ended) return;
     if (g.opened.has(hit.id)) return;
-    const allow = OPEN_M + Math.min(15, here?.acc || 0);
+    const allow = OPEN_M + SLACK(here?.acc);
     if (hit.d > allow) { toast(`조금 더 가까이! (약 ${Math.round(hit.d)}m)`); Sound.boop(440); return; }
     busy = true;
     try {
@@ -556,7 +557,7 @@ function hunt(g, pid) {
     const list = g.treasures.map((t) => ({ t, opened: g.opened.has(t.id), d: distM(here, t), b: bearing(here, t) }));
     const open = list.filter((o) => !o.opened).sort((a, b) => a.d - b.d);
     // only chests found with 찾기 (or already-opened ones right next to you) are drawn
-    const visible = list.filter((o) => (o.opened ? o.d < 15 : (revealed.get(o.t.id) || 0) > now && o.d < 40));
+    const visible = list.filter((o) => (o.opened ? o.d < 10 : (revealed.get(o.t.id) || 0) > now && o.d <= REVEAL_M + SLACK(here.acc) + 3));
     for (const o of visible.sort((a, b) => b.d - a.d)) {
       const rel = wrap180(o.b - head);
       if (Math.abs(rel) > HFOV / 2 + 15) continue;
@@ -566,7 +567,7 @@ function hunt(g, pid) {
       const img = o.opened ? IMG.open : IMG.closed, h = size * 0.85;
       const bobY = o.opened ? 0 : Math.sin(performance.now() / 300 + o.t.id * 1.7) * size * 0.04;
       gx.globalAlpha = o.opened ? 0.55 : Math.max(0.55, 1 - o.d / 80);
-      if (!o.opened && o.d < OPEN_M + (here.acc || 0)) {
+      if (!o.opened && o.d <= OPEN_M + SLACK(here.acc)) {
         gx.save(); gx.shadowColor = '#ffe066'; gx.shadowBlur = 30 + Math.sin(performance.now() / 150) * 12; gx.drawImage(img, x - size / 2, y - h + bobY, size, h); gx.restore();
       } else gx.drawImage(img, x - size / 2, y - h + bobY, size, h);
       gx.globalAlpha = 1;
@@ -587,12 +588,12 @@ function hunt(g, pid) {
     if (near && !g.ended) {
       const d = near.d;
       // signal strength 0..5: nothing far away, stronger as you close in (no direction given)
-      signal = d < 10 ? 5 : d < 16 ? 4 : d < 25 ? 3 : d < 38 ? 2 : d < 55 ? 1 : 0;
+      signal = d < 7 ? 5 : d < 12 ? 4 : d < 20 ? 3 : d < 32 ? 2 : d < 50 ? 1 : 0;
       const L = [['신호 없음', '여기저기 걸어 다녀 봐요'], ['약한 신호…', '뭔가 있는 것 같아'], ['신호가 잡혀요', '이쪽 근처인가?'],
         ['신호가 강해요!', '🔍 찾기를 눌러 봐요'], ['신호가 아주 강해요!', '🔍 찾기를 눌러요!'], ['삐삐삐! 바로 근처!', '🔍 찾기를 눌러요!']][signal];
       word.textContent = L[0];
       sub.textContent = !g.online ? '📶 연결 중…' : here.acc > 25 ? `📡 위치가 흐려요 (오차 ${Math.round(here.acc)}m)` : L[1];
-      if (shown) { word.textContent = '상자가 나타났어요!'; sub.textContent = shown.d <= OPEN_M + Math.min(15, here.acc || 0) ? '상자를 톡! 눌러 열어요' : `가까이 가서 눌러요 · ${Math.round(shown.d)}m`; }
+      if (shown) { word.textContent = '상자가 나타났어요!'; sub.textContent = shown.d <= OPEN_M + SLACK(here.acc) ? '상자를 톡! 눌러 열어요' : `가까이 가서 눌러요 · ${Math.round(shown.d)}m`; }
       if (signal > 0 && soundOn) {
         const every = [0, 6500, 4500, 3000, 2000, 1300][signal];
         if (performance.now() - lastWhistle > every) {
@@ -610,7 +611,7 @@ function hunt(g, pid) {
     ar.querySelectorAll('.bars i').forEach((b, i) => b.classList.toggle('on', i < n));
     ar.querySelector('.signal').dataset.level = n;
     document.getElementById('sigtxt').textContent = n ? `신호 ${n}` : '신호 없음';
-    ar.querySelector('#scan').classList.toggle('ready', n >= 3);
+    ar.querySelector('#scan').classList.toggle('ready', n >= 4);
   }
   raf = requestAnimationFrame(frame);
 
