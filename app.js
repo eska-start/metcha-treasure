@@ -232,16 +232,27 @@ function route() {
 
 function homeScreen() {
   $app.innerHTML = `
-    <div class="hero"><img src="metcha.svg" alt=""><h1>멧챠 보물찾기</h1>
-    <p class="muted">멧챠가 숨겨둔 보물상자를 카메라로 찾아요!<br>1등, 2등, 3등… 아니면 꽝?</p></div>
-    <div class="card"><h2>보물 찾으러 가기</h2>
+    <div class="scene"><div class="sign"><h1>멧챠 보물찾기</h1><small>카메라 들고 보물상자 탐험!</small></div></div>
+    <p class="lead">멧챠가 캠핑장 곳곳에 상자를 숨겼어요.<br><b>1등·2등·3등</b>일까, 아니면 <b>꽝</b>일까?</p>
+    <div class="card">
+      <h2><span class="ico">🧭</span>이렇게 놀아요</h2>
+      <div class="steps">
+        <div><b>📶</b>신호가<br>강한 쪽으로</div>
+        <div><b>🔍</b>찾기 버튼<br>꾹!</div>
+        <div><b>🎁</b>나타난 상자<br>톡 열기</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="ico">📷</span>찾으러 왔어요</h2>
       <p>진행자 폰에 나온 <b>QR을 카메라로 찍으면</b> 바로 들어와요.</p>
     </div>
-    <div class="card"><h2>보물 숨기기 (진행자)</h2>
-      <p class="muted">놀이터 한가운데에서 버튼 한 번이면 보물이 알아서 숨어요.</p>
-      <button class="sun big" onclick="go('#/new')">새 보물찾기 만들기</button>
+    <div class="card">
+      <h2><span class="ico">🗺️</span>숨길게요 (진행자)</h2>
+      <p class="muted">캠핑장 한가운데에서 버튼 한 번이면 보물이 알아서 숨어요.</p>
+      <div style="height:6px"></div>
+      <button class="sun big" onclick="go('#/new')">✨ 새 보물찾기 만들기</button>
     </div>
-    <p class="muted" style="text-align:center">상자를 연 기록(별명·상자 번호)만 공개 중계 서버(ntfy.sh)로 오가요. 위치는 폰 밖으로 안 나가요.</p>`;
+    <p class="foot">상자를 연 기록(별명·상자 번호)만 공개 중계 서버(ntfy.sh)로 오가요.<br>내 위치는 폰 밖으로 나가지 않아요.</p>`;
 }
 
 // ---------- new game (host)
@@ -251,19 +262,19 @@ function newScreen() {
     const sum = cfg.pz[1][0] + cfg.pz[2][0] + cfg.pz[3][0];
     cfg.n = Math.max(cfg.n, sum);
     $app.innerHTML = `
-      <div class="row"><h1 class="grow">새 보물찾기</h1><a class="btn ghost small" href="#/">처음으로</a></div>
-      <div class="card"><h2>어디까지 숨길까요?</h2>
-        <div class="seg">${[[20, '좁게 20m'], [40, '보통 40m'], [70, '넓게 70m']].map(([v, l]) => `<button data-r="${v}" class="${cfg.r === v ? '' : 'ghost'}">${l}</button>`).join('')}</div>
+      <div class="topbar"><h1>새 보물찾기</h1><a class="btn ghost small" href="#/">처음으로</a></div>
+      <div class="card"><h2><span class="ico">📏</span>어디까지 숨길까요?</h2>
+        <div class="seg">${[[20, '좁게<br>20m'], [40, '보통<br>40m'], [70, '넓게<br>70m']].map(([v, l]) => `<button data-r="${v}" class="${cfg.r === v ? '' : 'ghost'}">${l}</button>`).join('')}</div>
         <p class="muted">지금 서 있는 곳에서 이 거리 안에 숨어요. 길·물가가 없는 넓은 곳에서 해 주세요.</p></div>
-      <div class="card"><h2>보물상자 몇 개?</h2>
-        <div class="seg">${[8, 12, 20, 30].map((v) => `<button data-c="${v}" class="${cfg.n === v ? '' : 'ghost'}" ${v < sum ? 'disabled' : ''}>${v}개</button>`).join('')}</div>
-        <p class="muted">상품 ${sum}개 + 꽝 ${cfg.n - sum}개</p></div>
-      <div class="card"><h2>상품</h2>
-        ${[1, 2, 3].map((k) => `<div class="prizerow"><b>${MEDAL[k]} ${RANK[k]}</b>
+      <div class="card"><h2><span class="ico">🎁</span>상자 몇 개?</h2>
+        <div class="seg">${[8, 12, 20, 30].map((v) => `<button data-c="${v}" class="${cfg.n === v ? '' : 'ghost'}" ${v < sum ? 'disabled' : ''}>${v}</button>`).join('')}</div>
+        <div class="summary"><span class="chip gold">상품 ${sum}개</span><span class="chip silver">꽝 ${cfg.n - sum}개</span></div></div>
+      <div class="card"><h2><span class="ico">🏆</span>상품</h2>
+        ${[1, 2, 3].map((k) => `<div class="prizerow"><span class="medal">${MEDAL[k]}</span>
           <input data-pn="${k}" maxlength="20" placeholder="상품 이름" value="${esc(cfg.pz[k][1])}">
-          <div class="stepper"><button class="small ghost" data-m="${k}">−</button><b>${cfg.pz[k][0]}</b><button class="small ghost" data-p="${k}">+</button></div></div>`).join('')}
+          <div class="stepper"><button class="ghost" data-m="${k}">−</button><b>${cfg.pz[k][0]}</b><button class="ghost" data-p="${k}">+</button></div></div>`).join('')}
       </div>
-      <button id="go" class="sun big">📍 여기를 중심으로 보물 숨기기</button>
+      <button id="go" class="sun big">📍 여기를 중심으로 숨기기</button>
       <p id="note" class="muted" style="text-align:center"></p>`;
     for (const b of $app.querySelectorAll('[data-r]')) b.onclick = () => { cfg.r = +b.dataset.r; draw(); };
     for (const b of $app.querySelectorAll('[data-c]')) b.onclick = () => { cfg.n = +b.dataset.c; draw(); };
@@ -291,19 +302,20 @@ function hostScreen(cfg) {
   cleanup.push(() => g.close());
   const link = gameLink(cfg);
   $app.innerHTML = `
-    <div class="row"><h1 class="grow">진행자</h1><a class="btn ghost small" href="#/">처음으로</a></div>
-    <div class="card" style="text-align:center">
-      <img id="joinqr" alt="참가 QR" style="width:230px;image-rendering:pixelated">
-      <p class="muted">이 QR을 찍으면 바로 들어와요</p>
-      <div class="row"><button id="copy" class="ghost grow">링크 복사</button><button id="share" class="ghost grow">공유하기</button></div>
-      <div style="height:10px"></div>
+    <div class="topbar"><h1>진행자</h1><a class="btn ghost small" href="#/">처음으로</a></div>
+    <div class="card ticket">
+      <h2 style="justify-content:center">🎟️ 참가 QR</h2>
+      <img id="joinqr" class="qr" alt="참가 QR">
+      <p class="muted">아이들이 폰 카메라로 이 QR을 찍으면 바로 들어와요</p>
+      <div class="row" style="margin-top:12px"><button id="copy" class="ghost grow small">🔗 링크 복사</button><button id="share" class="ghost grow small">📤 공유하기</button></div>
+      <div style="height:14px"></div>
       <button class="big" onclick="go('#/g/${b64e(cfg)}')">🎥 나도 찾으러 가기</button>
-      <p class="muted">⚠️ 이 진행자 화면 주소는 다른 사람에게 보내지 마세요.</p>
+      <div class="warn">⚠️ 지금 이 진행자 화면 주소는 다른 사람에게 보내지 마세요</div>
     </div>
-    <div class="card"><h2>남은 상품</h2><div class="row" id="chips"></div><p id="opened" class="muted"></p></div>
-    <div class="card"><h2>당첨자</h2><div id="winners"></div></div>
+    <div class="card"><h2><span class="ico">🏆</span>남은 상품</h2><div class="row" id="chips"></div><p id="opened" class="muted"></p></div>
+    <div class="card"><h2><span class="ico">🎉</span>당첨자</h2><div id="winners"></div></div>
     <div class="card feed" id="feed"></div>
-    <div class="card"><h2>진행</h2><div class="row">
+    <div class="card"><h2><span class="ico">⚙️</span>진행</h2><div class="row">
       <button id="again" class="ghost grow">같은 자리에서 다시 숨기기</button>
       <button id="end" class="danger grow">끝내기</button></div></div>`;
   document.getElementById('joinqr').src = qrImg(link);
@@ -333,18 +345,19 @@ function winners(g) {
 }
 function feed(g) {
   const el = document.getElementById('feed'); if (!el) return;
-  el.innerHTML = '<h2>소식</h2>' + (g.feed.slice(-25).reverse().map((f) => `<div>${f.kind === 'win' ? '🎉' : f.kind === 'miss' ? '😜' : f.kind === 'join' ? '👋' : '🚩'} ${esc(f.text)}</div>`).join('') || '<div class="muted">아직 조용해요</div>');
+  el.innerHTML = '<h2><span class="ico">📣</span>소식</h2>' + (g.feed.slice(-25).reverse().map((f) => `<div>${f.kind === 'win' ? '🎉' : f.kind === 'miss' ? '😜' : f.kind === 'join' ? '👋' : '🚩'} ${esc(f.text)}</div>`).join('') || '<div class="muted">아직 조용해요</div>');
 }
 
 // ---------- join
 function joinForm(g, done) {
   let team = null;
   $app.innerHTML = `
-    <div class="hero"><img src="metcha.svg" alt=""><h1>보물찾기에 왔어요!</h1><p class="muted">이름(별명)을 정하고 팀을 골라요</p></div>
-    <div class="card"><label for="nm">내 별명</label><input id="nm" maxlength="12" placeholder="예: 하준">
-      <label>팀</label><div class="teams">${TEAMS.map((t) => `<div class="team" data-t="${t.id}" style="background:${t.color}">${esc(t.name)}</div>`).join('')}</div>
-      <p class="muted">안 고르면 사람 적은 팀으로 들어가요</p>
-      <button id="go" class="big">시작하기</button></div>`;
+    <div class="hero"><img src="metcha.svg" alt=""><h1>보물찾기에 왔어요!</h1><p class="muted">별명을 정하고 팀을 골라요</p></div>
+    <div class="card"><label for="nm">✏️ 내 별명</label><input id="nm" maxlength="12" placeholder="예: 하준">
+      <label>🚩 우리 팀</label><div class="teams">${TEAMS.map((t, i) => `<div class="team" data-t="${t.id}" style="background:${t.color}"><span>${['🦊', '🐳', '🐸', '🐥'][i]}</span>${esc(t.name)}</div>`).join('')}</div>
+      <p class="muted" style="text-align:center">안 고르면 사람 적은 팀으로 들어가요</p>
+      <div style="height:6px"></div>
+      <button id="go" class="sun big">시작하기 →</button></div>`;
   for (const el of $app.querySelectorAll('[data-t]')) el.onclick = () => { team = el.dataset.t; for (const x of $app.querySelectorAll('[data-t]')) x.classList.toggle('on', x === el); };
   document.getElementById('go').onclick = async (ev) => {
     ev.currentTarget.disabled = true;
@@ -378,9 +391,14 @@ async function startGate(g, pid) {
   $app.innerHTML = '';
   const gate = document.createElement('div');
   gate.className = 'start';
-  gate.innerHTML = `<div><img src="metcha.svg" alt=""><h1 style="color:#fff">보물상자를 찾아라!</h1>
-    <p>폰을 세워서 카메라로 주변을 둘러보세요.<br>상자가 보이면 가까이 가서 <b>톡!</b> 눌러요.</p>
-    <button id="startbtn" class="sun big" style="margin-top:14px">🎥 카메라로 찾기 시작</button></div>`;
+  gate.innerHTML = `<div class="scene"></div><div class="inner">
+    <h1>보물상자를 찾아라!</h1>
+    <div class="tips">
+      <div>📶 <b>신호</b>가 강해지는 쪽으로 걸어가요</div>
+      <div>🔍 신호가 꽉 차면 <b>찾기</b>를 눌러요</div>
+      <div>🎁 카메라에 나타난 상자를 <b>톡!</b> 열어요</div>
+    </div>
+    <button id="startbtn" class="sun big">🎥 카메라 켜고 시작</button></div>`;
   document.body.append(gate);
   cleanup.push(() => gate.remove());
   await new Promise((resolve) => (gate.querySelector('#startbtn').onclick = resolve));
@@ -394,11 +412,11 @@ function hunt(g, pid) {
   const ar = document.createElement('div');
   ar.className = 'ar';
   ar.innerHTML = `<video playsinline muted autoplay></video><canvas></canvas>
-    <div class="top"><span id="me"></span><span class="grow"></span><span id="chips" class="row" style="gap:4px"></span><button id="snd" class="iconbtn">🔊</button></div>
-    <div class="bottom">
+    <div class="top"><span id="me" class="me glass"></span><span class="grow"></span><span id="chips" class="row" style="gap:4px"></span><button id="snd" class="iconbtn">🔊</button></div>
+    <div class="bottom glass">
       <div class="signal"><div class="bars">${[1, 2, 3, 4, 5].map((i) => `<i style="height:${i * 20}%"></i>`).join('')}</div><small id="sigtxt">신호 없음</small></div>
       <div class="heat"><b id="word">위치 찾는 중</b><span id="sub">하늘이 보이는 곳에서 잠깐 기다려요</span></div>
-      <button id="scan" class="scanbtn">🔍<br>찾기</button></div>`;
+      <button id="scan" class="scanbtn"><em>🔍</em><span>찾기</span></button></div>`;
   document.body.append(ar);
   const video = ar.querySelector('video'), cv = ar.querySelector('canvas');
   const gx = cv.getContext('2d');
@@ -484,8 +502,8 @@ function hunt(g, pid) {
     const el = document.createElement('div');
     if (prize) {
       el.className = 'result win';
-      el.innerHTML = `<div><div class="medal">${MEDAL[prize]}</div><h1>${RANK[prize]} 당첨!</h1>${name ? `<p><b>${esc(name)}</b></p>` : ''}<p>진행자에게 화면을 보여주세요</p>
-        <button class="big" style="margin-top:16px">계속 찾기</button></div>`;
+      el.innerHTML = `<div><div class="medal">${MEDAL[prize]}</div><h1>${RANK[prize]} 당첨!</h1>${name ? `<div class="prize">🎁 ${esc(name)}</div>` : ''}<p>진행자에게 이 화면을 보여주세요</p>
+        <button class="big" style="margin-top:18px">계속 찾기</button></div>`;
       Sound.fanfare(); navigator.vibrate?.([80, 60, 200]);
       const colors = ['#ff6b6b', '#4dabf7', '#51cf66', '#fcc419', '#cc5de8'];
       for (let i = 0; i < 70; i++) {
@@ -495,8 +513,8 @@ function hunt(g, pid) {
       }
     } else {
       el.className = 'result miss';
-      el.innerHTML = `<div><img class="tongue" src="metcha.svg" alt=""><h1>꽝!</h1><p>멧챠가 메롱~ 😜<br>다른 상자를 찾아봐요!</p>
-        <button class="big" style="margin-top:16px">다시 찾기</button></div>`;
+      el.innerHTML = `<div><img class="tongue" src="metcha.svg" alt=""><h1>꽝!</h1><p>멧챠가 메롱~ 😜<br>다른 상자에 진짜 보물이 있을지도!</p>
+        <button class="sun big" style="margin-top:18px">다시 찾으러 가기</button></div>`;
       Sound.boing(); navigator.vibrate?.(60);
     }
     el.querySelector('button').onclick = () => el.remove();
@@ -525,8 +543,8 @@ function hunt(g, pid) {
     const el = document.createElement('div');
     el.className = 'result win end';
     const rows = [];
-    for (const k of [1, 2, 3]) for (const t of g.treasures.filter((x) => x.prize === k && g.opened.has(x.id))) rows.push(`<div style="font-size:20px">${MEDAL[k]} ${esc(g.players.get(g.opened.get(t.id))?.name || '?')}</div>`);
-    el.innerHTML = `<div><img src="metcha.svg" alt="" style="width:110px"><h1>보물찾기 끝!</h1>${rows.join('') || '<p>당첨자가 없어요</p>'}<button class="big" style="margin-top:16px">닫기</button></div>`;
+    for (const k of [1, 2, 3]) for (const t of g.treasures.filter((x) => x.prize === k && g.opened.has(x.id))) rows.push(`<div class="prize" style="display:block;margin:8px auto;max-width:280px">${MEDAL[k]} ${esc(g.players.get(g.opened.get(t.id))?.name || '?')}</div>`);
+    el.innerHTML = `<div><img src="metcha.svg" alt="" style="width:110px"><h1>보물찾기 끝!</h1>${rows.join('') || '<p>당첨자가 없어요</p>'}<button class="big" style="margin-top:18px">닫기</button></div>`;
     el.querySelector('button').onclick = () => el.remove();
     document.body.append(el);
   }

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 230" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cc8ff"/><stop offset="1" stop-color="#d9f1ff"/></linearGradient>
+    <linearGradient id="h1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd38a"/><stop offset="1" stop-color="#4fb06a"/></linearGradient>
+    <linearGradient id="h2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5cc075"/><stop offset="1" stop-color="#2f8f55"/></linearGradient>
+  </defs>
+  <rect width="400" height="230" fill="url(#sky)"/>
+  <circle cx="330" cy="52" r="26" fill="#ffd34d"/><circle cx="330" cy="52" r="38" fill="#ffd34d" opacity=".25"/>
+  <g fill="#fff" opacity=".9"><ellipse cx="70" cy="50" rx="30" ry="11"/><ellipse cx="92" cy="44" rx="20" ry="12"/><ellipse cx="230" cy="34" rx="24" ry="9"/><ellipse cx="248" cy="29" rx="15" ry="9"/></g>
+  <path d="M0 150 Q80 100 170 135 T400 120 V230 H0Z" fill="url(#h1)"/>
+  <g fill="#2f7d4f"><path d="M30 150 l14 -44 l14 44z"/><path d="M50 146 l11 -34 l11 34z"/><path d="M352 128 l15 -48 l15 48z"/><path d="M376 132 l11 -34 l11 34z"/></g>
+  <g fill="#7a4a20"><rect x="42" y="148" width="4" height="8"/><rect x="365" y="126" width="4" height="8"/></g>
+  <path d="M0 190 Q120 150 230 178 T400 170 V230 H0Z" fill="url(#h2)"/>
+  <g transform="translate(250 128)">
+    <path d="M0 52 L34 0 L68 52Z" fill="#ff8a3d"/><path d="M34 0 L68 52 L50 52Z" fill="#e2672a"/><path d="M26 52 L34 30 L42 52Z" fill="#7a3a12"/>
+    <line x1="34" y1="0" x2="34" y2="-8" stroke="#7a4a20" stroke-width="3"/><path d="M34 -8 l12 4 l-12 4z" fill="#ff5d73"/>
+  </g>
+  <g transform="translate(118 158)">
+    <rect x="0" y="22" width="64" height="34" rx="6" fill="#a0622d"/><rect x="0" y="22" width="64" height="7" fill="#7a4a20"/>
+    <path d="M-3 25 Q32 -4 67 25Z" fill="#c47a3a"/><rect x="28" y="26" width="9" height="13" rx="2" fill="#ffd34d"/>
+    <rect x="12" y="10" width="40" height="18" rx="9" fill="#5fcf72"/>
+    <circle cx="24" cy="12" r="7" fill="#fff"/><circle cx="40" cy="12" r="7" fill="#fff"/><circle cx="25" cy="13" r="3.4" fill="#2b2b2b"/><circle cx="39" cy="13" r="3.4" fill="#2b2b2b"/>
+  </g>
+  <g fill="#ffe066"><path d="M108 150 l3 7 l7 1 l-5 5 l1 7 l-6 -4 l-6 4 l1 -7 l-5 -5 l7 -1z"/><path d="M196 152 l2 5 l5 1 l-4 3 l1 5 l-4 -3 l-4 3 l1 -5 l-4 -3 l5 -1z"/></g>
+</svg>

@@ -3,7 +3,7 @@
   "short_name": "보물찾기",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f4efe1",
-  "theme_color": "#2f5d3a",
+  "background_color": "#fff8ec",
+  "theme_color": "#1f7a4d",
   "icons": [{ "src": "metcha.svg", "sizes": "any", "type": "image/svg+xml" }]
 }
