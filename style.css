@@ -100,7 +100,7 @@ label { display: block; font-weight: 700; margin: 10px 0 6px; }
 .ar .bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 12px calc(14px + env(safe-area-inset-bottom)); display: flex; gap: 12px; align-items: flex-end;
   background: linear-gradient(transparent, rgba(0,0,0,.6)); color: #fff; }
 .ar .heat { flex: 1; min-width: 0; }
-.ar .heat b { font-size: 28px; display: block; text-shadow: 0 2px 4px rgba(0,0,0,.4); }
+.ar .heat b { font-size: 21px; line-height: 1.25; display: block; text-shadow: 0 2px 4px rgba(0,0,0,.4); }
 .ar .heat span { font-size: 15px; opacity: .95; }
 .ar .radar { width: 116px; height: 116px; flex: none; }
 .ar .iconbtn { background: rgba(0,0,0,.45); color: #fff; border-radius: 12px; padding: 8px 10px; font-size: 15px; }
@@ -119,3 +119,15 @@ label { display: block; font-weight: 700; margin: 10px 0 6px; }
 .prizerow { display: grid; grid-template-columns: 56px 1fr 110px; gap: 8px; align-items: center; margin: 6px 0; }
 .stepper { display: flex; align-items: center; gap: 6px; } .stepper button { padding: 8px 12px; } .stepper b { width: 22px; text-align: center; }
 body:has(.ar) #toast { bottom: calc(160px + env(safe-area-inset-bottom)); }
+
+/* signal meter + scan button */
+.ar .signal { width: 76px; flex: none; text-align: center; }
+.ar .signal .bars { height: 54px; display: flex; gap: 4px; align-items: flex-end; justify-content: center; }
+.ar .signal .bars i { width: 10px; border-radius: 3px; background: rgba(255,255,255,.28); transition: background .3s; }
+.ar .signal .bars i.on { background: #ffd34d; box-shadow: 0 0 8px #ffd34d; }
+.ar .signal[data-level="5"] .bars i.on { background: #ff6b3c; box-shadow: 0 0 12px #ff6b3c; }
+.ar .signal small { font-weight: 800; font-size: 13px; }
+.ar .scanbtn { flex: none; width: 84px; height: 84px; border-radius: 50%; padding: 0; font-size: 18px; line-height: 1.15; background: rgba(0,0,0,.5); border: 3px solid rgba(255,255,255,.6); }
+.ar .scanbtn.ready { background: #ffb84d; color: #3b2a00; border-color: #fff; animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.08); box-shadow: 0 0 24px #ffd34d; } }
+.ar .bottom { align-items: center; }

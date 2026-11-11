@@ -394,11 +394,18 @@ function hunt(g, pid) {
   ar.className = 'ar';
   ar.innerHTML = `<video playsinline muted autoplay></video><canvas></canvas>
     <div class="top"><span id="me"></span><span class="grow"></span><span id="chips" class="row" style="gap:4px"></span><button id="snd" class="iconbtn">🔊</button></div>
-    <div class="bottom"><canvas class="radar" width="232" height="232"></canvas><div class="heat"><b id="word">위치 찾는 중</b><span id="sub">하늘이 보이는 곳에서 잠깐 기다려요</span></div></div>`;
+    <div class="bottom">
+      <div class="signal"><div class="bars">${[1, 2, 3, 4, 5].map((i) => `<i style="height:${i * 20}%"></i>`).join('')}</div><small id="sigtxt">신호 없음</small></div>
+      <div class="heat"><b id="word">위치 찾는 중</b><span id="sub">하늘이 보이는 곳에서 잠깐 기다려요</span></div>
+      <button id="scan" class="scanbtn">🔍<br>찾기</button></div>`;
   document.body.append(ar);
-  const video = ar.querySelector('video'), cv = ar.querySelector('canvas'), radar = ar.querySelector('.radar');
-  const gx = cv.getContext('2d'), rg = radar.getContext('2d');
+  const video = ar.querySelector('video'), cv = ar.querySelector('canvas');
+  const gx = cv.getContext('2d');
   let here = null, heading = null, pitch = 0, dragHeading = 0, soundOn = true, lastWhistle = 0, boxes = [], stream = null, busy = false;
+  // chests stay invisible until you press 찾기 close enough; then they show for a while
+  const revealed = new Map(); // treasure id -> until (ms)
+  const REVEAL_M = 15, REVEAL_FOR = 45000;
+  let scanUntil = 0, scanCool = 0, signal = 0;
   let fedTo = g.feed.length, endShown = false;
 
   navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
@@ -431,6 +438,27 @@ function hunt(g, pid) {
   cv.addEventListener('pointerdown', (e) => { dragX = e.clientX; moved = false; });
   cv.addEventListener('pointermove', (e) => { if (dragX != null && heading == null) { const dx = e.clientX - dragX; if (Math.abs(dx) > 4) moved = true; dragHeading = (dragHeading - dx * 0.25 + 360) % 360; dragX = e.clientX; } });
   cv.addEventListener('pointerup', (e) => { dragX = null; if (!moved) tap(e.clientX, e.clientY); });
+
+  ar.querySelector('#scan').onclick = () => {
+    const now = performance.now();
+    if (now < scanCool || g.ended) return;
+    scanCool = now + 2500; scanUntil = now + 1200;
+    Sound.tone(900, 0, 0.12, 0.25); Sound.tone(1200, 0.15, 0.12, 0.25); Sound.tone(1600, 0.3, 0.2, 0.25);
+    if (!here) { toast('아직 내 위치를 몰라요'); return; }
+    const reach = REVEAL_M + Math.min(10, here.acc || 0);
+    const found = g.treasures.filter((t) => !g.opened.has(t.id) && distM(here, t) <= reach);
+    setTimeout(() => {
+      if (found.length) {
+        for (const t of found) revealed.set(t.id, Date.now() + REVEAL_FOR);
+        toast(found.length > 1 ? `✨ 상자 ${found.length}개가 나타났어요! 둘러봐요` : '✨ 상자가 나타났어요! 카메라로 둘러봐요', 3000);
+        Sound.tone(1320, 0, 0.25, 0.3, 'triangle'); Sound.tone(1760, 0.12, 0.35, 0.3, 'triangle');
+        navigator.vibrate?.([40, 40, 80]);
+      } else {
+        toast(signal >= 3 ? '거의 다 왔어! 조금 더 움직여서 다시 찾아봐' : '여긴 없어요… 신호가 강한 쪽으로 가 봐요', 2600);
+        Sound.boop(330);
+      }
+    }, 1200);
+  };
 
   const sndBtn = ar.querySelector('#snd');
   sndBtn.onclick = () => { soundOn = !soundOn; sndBtn.textContent = soundOn ? '🔊' : '🔇'; };
@@ -513,10 +541,23 @@ function hunt(g, pid) {
     boxes = [];
     const head = heading ?? dragHeading, ppd = W / HFOV;
     const word = document.getElementById('word'), sub = document.getElementById('sub');
-    if (!here) { drawRadar(head, []); return; }
+    // scan ripple
+    const sNow = performance.now();
+    if (sNow < scanUntil) {
+      const k = 1 - (scanUntil - sNow) / 1200;
+      for (const off of [0, 0.33, 0.66]) {
+        const kk = (k + off) % 1;
+        gx.strokeStyle = `rgba(255,224,102,${0.8 * (1 - kk)})`; gx.lineWidth = 4;
+        gx.beginPath(); gx.arc(W / 2, H * 0.55, kk * Math.max(W, H) * 0.6, 0, Math.PI * 2); gx.stroke();
+      }
+    }
+    if (!here) { drawSignal(0); return; }
+    const now = Date.now();
     const list = g.treasures.map((t) => ({ t, opened: g.opened.has(t.id), d: distM(here, t), b: bearing(here, t) }));
     const open = list.filter((o) => !o.opened).sort((a, b) => a.d - b.d);
-    for (const o of list.filter((o) => o.d < 60 && (!o.opened || o.d < 20)).sort((a, b) => b.d - a.d)) {
+    // only chests found with 찾기 (or already-opened ones right next to you) are drawn
+    const visible = list.filter((o) => (o.opened ? o.d < 15 : (revealed.get(o.t.id) || 0) > now && o.d < 40));
+    for (const o of visible.sort((a, b) => b.d - a.d)) {
       const rel = wrap180(o.b - head);
       if (Math.abs(rel) > HFOV / 2 + 15) continue;
       const elev = -Math.atan2(1.3, Math.max(1.5, o.d)) / toR;
@@ -534,43 +575,42 @@ function hunt(g, pid) {
       gx.lineWidth = 4; gx.strokeStyle = 'rgba(0,0,0,.55)'; gx.strokeText(label, x, y + 20); gx.fillStyle = '#fff'; gx.fillText(label, x, y + 20);
       if (!o.opened) boxes.push({ id: o.t.id, x: x - size / 2, y: y - h + bobY, w: size, h, d: o.d });
     }
+    // a revealed chest you've turned away from: small arrow back to it (only for ones you already found with 찾기)
+    const shown = visible.filter((o) => !o.opened).sort((a, b) => a.d - b.d)[0];
+    if (shown && Math.abs(wrap180(shown.b - head)) > HFOV / 2) {
+      const left = wrap180(shown.b - head) < 0, ax = left ? 30 : W - 30, ay = H * 0.45;
+      gx.fillStyle = 'rgba(255,209,77,.95)'; gx.beginPath();
+      if (left) { gx.moveTo(ax - 16, ay); gx.lineTo(ax + 10, ay - 20); gx.lineTo(ax + 10, ay + 20); } else { gx.moveTo(ax + 16, ay); gx.lineTo(ax - 10, ay - 20); gx.lineTo(ax - 10, ay + 20); }
+      gx.fill();
+    }
     const near = open[0];
     if (near && !g.ended) {
-      const rel = wrap180(near.b - head);
-      if (Math.abs(rel) > HFOV / 2) {
-        const left = rel < 0, ax = left ? 34 : W - 34, ay = H * 0.45;
-        gx.fillStyle = 'rgba(255,209,77,.95)'; gx.beginPath();
-        if (left) { gx.moveTo(ax - 18, ay); gx.lineTo(ax + 12, ay - 22); gx.lineTo(ax + 12, ay + 22); } else { gx.moveTo(ax + 18, ay); gx.lineTo(ax - 12, ay - 22); gx.lineTo(ax - 12, ay + 22); }
-        gx.fill();
-        gx.font = '800 15px system-ui'; gx.textAlign = left ? 'left' : 'right'; gx.lineWidth = 4; gx.strokeStyle = 'rgba(0,0,0,.5)';
-        const txt = left ? '  ← 이쪽!' : '이쪽! →  '; gx.strokeText(txt, left ? 8 : W - 8, ay + 44); gx.fillStyle = '#fff'; gx.fillText(txt, left ? 8 : W - 8, ay + 44);
-      }
       const d = near.d;
-      const L = d < OPEN_M + 2 ? ['뜨거워!!', '바로 앞! 상자를 눌러요'] : d < 18 ? ['따뜻해!', '거의 다 왔어'] : d < 35 ? ['미지근', '조금만 더'] : d < 70 ? ['차가워', '다른 쪽으로 가 볼까?'] : ['꽁꽁', '아주 멀어요'];
-      word.textContent = L[0]; sub.textContent = !g.online ? '📶 연결 중…' : here.acc > 25 ? `📡 위치가 흐려요 (오차 ${Math.round(here.acc)}m)` : `${L[1]} · ${Math.round(d)}m`;
-      const every = d < 12 ? 1800 : d < 25 ? 2800 : d < 45 ? 4200 : 6500;
-      if (soundOn && performance.now() - lastWhistle > every) {
-        lastWhistle = performance.now();
-        Sound.whistle(Math.max(0.08, Math.min(1, 8 / Math.max(4, d))), Math.sin(wrap180(near.b - head) * toR));
+      // signal strength 0..5: nothing far away, stronger as you close in (no direction given)
+      signal = d < 10 ? 5 : d < 16 ? 4 : d < 25 ? 3 : d < 38 ? 2 : d < 55 ? 1 : 0;
+      const L = [['신호 없음', '여기저기 걸어 다녀 봐요'], ['약한 신호…', '뭔가 있는 것 같아'], ['신호가 잡혀요', '이쪽 근처인가?'],
+        ['신호가 강해요!', '🔍 찾기를 눌러 봐요'], ['신호가 아주 강해요!', '🔍 찾기를 눌러요!'], ['삐삐삐! 바로 근처!', '🔍 찾기를 눌러요!']][signal];
+      word.textContent = L[0];
+      sub.textContent = !g.online ? '📶 연결 중…' : here.acc > 25 ? `📡 위치가 흐려요 (오차 ${Math.round(here.acc)}m)` : L[1];
+      if (shown) { word.textContent = '상자가 나타났어요!'; sub.textContent = shown.d <= OPEN_M + Math.min(15, here.acc || 0) ? '상자를 톡! 눌러 열어요' : `가까이 가서 눌러요 · ${Math.round(shown.d)}m`; }
+      if (signal > 0 && soundOn) {
+        const every = [0, 6500, 4500, 3000, 2000, 1300][signal];
+        if (performance.now() - lastWhistle > every) {
+          lastWhistle = performance.now();
+          Sound.whistle([0, 0.12, 0.25, 0.45, 0.7, 1][signal], Math.sin(wrap180(near.b - head) * toR) * 0.6);
+        }
       }
-    } else { word.textContent = g.ended ? '끝!' : '다 열었어요!'; sub.textContent = '당첨자를 확인해요'; }
-    drawRadar(head, list);
+    } else { signal = 0; word.textContent = g.ended ? '끝!' : '다 열었어요!'; sub.textContent = '당첨자를 확인해요'; }
+    drawSignal(signal);
   }
-  function drawRadar(head, list) {
-    const R = 116, c = R, range = 50;
-    rg.clearRect(0, 0, 232, 232);
-    rg.fillStyle = 'rgba(10,40,20,.6)'; rg.beginPath(); rg.arc(c, c, R - 2, 0, Math.PI * 2); rg.fill();
-    rg.strokeStyle = 'rgba(160,255,170,.35)'; rg.lineWidth = 2;
-    for (const k of [1 / 3, 2 / 3]) { rg.beginPath(); rg.arc(c, c, (R - 2) * k, 0, Math.PI * 2); rg.stroke(); }
-    rg.fillStyle = 'rgba(160,255,170,.18)'; rg.beginPath(); rg.moveTo(c, c);
-    rg.arc(c, c, R - 2, -Math.PI / 2 - (HFOV / 2) * toR, -Math.PI / 2 + (HFOV / 2) * toR); rg.fill();
-    for (const o of list) {
-      if (o.d > range) continue;
-      const a = (wrap180(o.b - head) - 90) * toR, rr = (o.d / range) * (R - 10);
-      rg.fillStyle = o.opened ? 'rgba(255,255,255,.35)' : '#ffd34d';
-      rg.beginPath(); rg.arc(c + Math.cos(a) * rr, c + Math.sin(a) * rr, o.opened ? 6 : 9, 0, Math.PI * 2); rg.fill();
-    }
-    rg.fillStyle = '#fff'; rg.beginPath(); rg.arc(c, c, 8, 0, Math.PI * 2); rg.fill();
+  let lastSig = -1;
+  function drawSignal(n) {
+    if (n === lastSig) return;
+    lastSig = n;
+    ar.querySelectorAll('.bars i').forEach((b, i) => b.classList.toggle('on', i < n));
+    ar.querySelector('.signal').dataset.level = n;
+    document.getElementById('sigtxt').textContent = n ? `신호 ${n}` : '신호 없음';
+    ar.querySelector('#scan').classList.toggle('ready', n >= 3);
   }
   raf = requestAnimationFrame(frame);
 
